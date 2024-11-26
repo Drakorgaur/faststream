@@ -1,5 +1,5 @@
 import time
-from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Dict
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Sequence
 
 from faststream import BaseMiddleware
 from faststream.__about__ import __version__

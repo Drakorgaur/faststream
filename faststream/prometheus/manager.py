@@ -1,5 +1,5 @@
 from types import MappingProxyType
-from typing import Final, Dict
+from typing import Dict, Final
 
 from faststream.prometheus.container import MetricsContainer
 from faststream.prometheus.types import ProcessingStatus, PublishingStatus
