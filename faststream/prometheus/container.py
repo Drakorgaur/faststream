@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Optional, Sequence, Union, cast
+from typing import TYPE_CHECKING, Iterable, Optional, Sequence, Union, cast
 
 from prometheus_client import Counter, Gauge, Histogram
 
@@ -10,6 +10,7 @@ if TYPE_CHECKING:
 class MetricsContainer:
     __slots__ = (
         "_registry",
+        "_user_labels",
         "_metrics_prefix",
         "received_messages_total",
         "received_messages_size_bytes",
@@ -43,9 +44,11 @@ class MetricsContainer:
         *,
         metrics_prefix: str = "faststream",
         received_messages_size_buckets: Optional[Sequence[float]] = None,
+        extra_labels: Iterable[str] = (),
     ):
         self._registry = registry
         self._metrics_prefix = metrics_prefix
+        self._user_labels = extra_labels
 
         self.received_messages_total = cast(
             Counter,
@@ -53,7 +56,7 @@ class MetricsContainer:
         ) or Counter(
             name=f"{metrics_prefix}_received_messages_total",
             documentation="Count of received messages by broker and handler",
-            labelnames=["app_name", "broker", "handler"],
+            labelnames=["app_name", "broker", "handler", *self._user_labels],
             registry=registry,
         )
 
@@ -65,7 +68,7 @@ class MetricsContainer:
         ) or Histogram(
             name=f"{metrics_prefix}_received_messages_size_bytes",
             documentation="Histogram of received messages size in bytes by broker and handler",
-            labelnames=["app_name", "broker", "handler"],
+            labelnames=["app_name", "broker", "handler", *self._user_labels],
             registry=registry,
             buckets=received_messages_size_buckets or self.DEFAULT_SIZE_BUCKETS,
         )
@@ -78,7 +81,7 @@ class MetricsContainer:
         ) or Gauge(
             name=f"{metrics_prefix}_received_messages_in_process",
             documentation="Gauge of received messages in process by broker and handler",
-            labelnames=["app_name", "broker", "handler"],
+            labelnames=["app_name", "broker", "handler", *self._user_labels],
             registry=registry,
         )
 
@@ -90,7 +93,7 @@ class MetricsContainer:
         ) or Counter(
             name=f"{metrics_prefix}_received_processed_messages_total",
             documentation="Count of received processed messages by broker, handler and status",
-            labelnames=["app_name", "broker", "handler", "status"],
+            labelnames=["app_name", "broker", "handler", "status", *self._user_labels],
             registry=registry,
         )
 
@@ -102,7 +105,7 @@ class MetricsContainer:
         ) or Histogram(
             name=f"{metrics_prefix}_received_processed_messages_duration_seconds",
             documentation="Histogram of received processed messages duration in seconds by broker and handler",
-            labelnames=["app_name", "broker", "handler"],
+            labelnames=["app_name", "broker", "handler", *self._user_labels],
             registry=registry,
         )
 
@@ -114,7 +117,13 @@ class MetricsContainer:
         ) or Counter(
             name=f"{metrics_prefix}_received_processed_messages_exceptions_total",
             documentation="Count of received processed messages exceptions by broker, handler and exception_type",
-            labelnames=["app_name", "broker", "handler", "exception_type"],
+            labelnames=[
+                "app_name",
+                "broker",
+                "handler",
+                "exception_type",
+                *self._user_labels,
+            ],
             registry=registry,
         )
 
@@ -124,7 +133,13 @@ class MetricsContainer:
         ) or Counter(
             name=f"{metrics_prefix}_published_messages_total",
             documentation="Count of published messages by destination and status",
-            labelnames=["app_name", "broker", "destination", "status"],
+            labelnames=[
+                "app_name",
+                "broker",
+                "destination",
+                "status",
+                *self._user_labels,
+            ],
             registry=registry,
         )
 
@@ -136,7 +151,7 @@ class MetricsContainer:
         ) or Histogram(
             name=f"{metrics_prefix}_published_messages_duration_seconds",
             documentation="Histogram of published messages duration in seconds by broker and destination",
-            labelnames=["app_name", "broker", "destination"],
+            labelnames=["app_name", "broker", "destination", *self._user_labels],
             registry=registry,
         )
 
@@ -148,7 +163,13 @@ class MetricsContainer:
         ) or Counter(
             name=f"{metrics_prefix}_published_messages_exceptions_total",
             documentation="Count of published messages exceptions by broker, destination and exception_type",
-            labelnames=["app_name", "broker", "destination", "exception_type"],
+            labelnames=[
+                "app_name",
+                "broker",
+                "destination",
+                "exception_type",
+                *self._user_labels,
+            ],
             registry=registry,
         )
 

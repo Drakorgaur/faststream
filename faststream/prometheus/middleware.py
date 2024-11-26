@@ -1,7 +1,8 @@
 import time
-from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence
+from typing import TYPE_CHECKING, Any, Callable, Optional, Sequence, Dict
 
 from faststream import BaseMiddleware
+from faststream.__about__ import __version__
 from faststream.exceptions import IgnoredException
 from faststream.prometheus.consts import (
     PROCESSING_STATUS_BY_ACK_STATUS,
@@ -12,6 +13,8 @@ from faststream.prometheus.manager import MetricsManager
 from faststream.prometheus.provider import MetricsSettingsProvider
 from faststream.prometheus.types import ProcessingStatus, PublishingStatus
 from faststream.types import EMPTY
+
+FASTSTREAM_VERSION_LABEL = "faststream_version"
 
 if TYPE_CHECKING:
     from prometheus_client import CollectorRegistry
@@ -182,19 +185,46 @@ class BasePrometheusMiddleware:
         app_name: str = EMPTY,
         metrics_prefix: str = "faststream",
         received_messages_size_buckets: Optional[Sequence[float]] = None,
+        use_faststream_version_label: bool = False,
+        extra_labels: Dict[str, str] = EMPTY,
     ):
+        """Initialize the Prometheus middleware.
+
+        Args:
+            registry (CollectorRegistry): The Prometheus registry.
+            app_name (str): The application name.
+            metrics_prefix (str): The metrics prefix.
+            received_messages_size_buckets (Optional[Sequence[float]]): The received messages size buckets.
+            settings_provider_factory (Callable[[Any], Optional[MetricsSettingsProvider[Any]]]):
+                Factory function to get the settings provider.
+
+            use_faststream_version_label (bool): Whether to add the faststream version label.
+                $(app_name)_metric{faststream_version="x.y.z", ...}
+                if set to true, `extra_labels` will be updated with the faststream version.
+            extra_labels (dict[str, str]): Extra labels to add to the metrics.
+                dict[MetricsLabelName, MetricsLabelValue]
+                if not provided but `use_faststream_version_label` is set to true,
+                `extra_labels` will contain only the faststream version.
+        """
         if app_name is EMPTY:
             app_name = metrics_prefix
+
+        extra_labels_ = ({} if extra_labels is EMPTY else extra_labels).copy()
+
+        if use_faststream_version_label:
+            extra_labels_[FASTSTREAM_VERSION_LABEL] = __version__
 
         self._settings_provider_factory = settings_provider_factory
         self._metrics_container = MetricsContainer(
             registry,
             metrics_prefix=metrics_prefix,
             received_messages_size_buckets=received_messages_size_buckets,
+            extra_labels=extra_labels_.keys(),
         )
         self._metrics_manager = MetricsManager(
             self._metrics_container,
             app_name=app_name,
+            extra_labels=extra_labels_,
         )
 
     def __call__(self, msg: Optional[Any]) -> BaseMiddleware:
